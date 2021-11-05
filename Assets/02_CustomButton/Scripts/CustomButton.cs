@@ -12,47 +12,46 @@ public class CustomButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
     public event Action LongPress;
     private Coroutine _countDownCoroutine;
 
+    private CustomButtonModel _buttonModel;
+
     private void Awake()
     {
+        _buttonModel = new CustomButtonModel(_duration);
         LongPress += () => print("long!!!");
         Tap += () => print("tap!");
+
+        _buttonModel.Tapped += Tap;
+        _buttonModel.LongPressed += LongPress;
+        _buttonModel.Pressed += () => _animator.SetTrigger("Pressed");
+        _buttonModel.Released += () => _animator.SetTrigger("Released");
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        _animator.SetTrigger("Pressed");
         _countDownCoroutine = StartCoroutine(CountDownLongPress(_duration));
+        _buttonModel.Down(Time.time);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        Tap?.Invoke();
-        if (_countDownCoroutine != null)
-        {
-            StopCoroutine(_countDownCoroutine);
-        }
-
-        _animator.SetTrigger("Released");
+        StopCoroutine(_countDownCoroutine);
+        _buttonModel.Up();
     }
 
     private IEnumerator CountDownLongPress(float duration)
     {
         yield return new WaitForSeconds(duration);
-        LongPress?.Invoke();
+        _buttonModel.LongPress(Time.time);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        if (_countDownCoroutine != null)
-        {
-            StopCoroutine(_countDownCoroutine);
-        }
-        
-        _animator.SetTrigger("Released");
+        StopCoroutine(_countDownCoroutine);
+        _buttonModel.Exit();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        _animator.SetTrigger("Pressed");
+        _buttonModel.Enter();
     }
 }
